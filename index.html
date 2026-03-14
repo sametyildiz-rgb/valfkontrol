@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<body>
+    <button onclick="baglanVeGonder(1)" style="height:100px; width:100%; background:green; color:white;">VALF AÇ</button>
+    <hr>
+    <button onclick="baglanVeGonder(0)" style="height:100px; width:100%; background:red; color:white;">VALF KAPAT</button>
+
+    <script>
+        async function baglanVeGonder(deger) {
+            const serviceUuid = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
+            const charUuid = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
+
+            try {
+                // 1. Cihazı tara ve seç
+                const device = await navigator.bluetooth.requestDevice({
+                    filters: [{ services: [serviceUuid] }]
+                });
+
+                // 2. Bağlan
+                const server = await device.gatt.connect();
+                const service = await server.getPrimaryService(serviceUuid);
+                const characteristic = await service.getCharacteristic(charUuid);
+
+                // 3. Veriyi gönder (Uint8Array olarak)
+                const data = new Uint8Array([deger]);
+                await characteristic.writeValue(data);
+                
+                alert("Komut gönderildi: " + deger);
+            } catch (error) {
+                console.log("Hata: " + error);
+            }
+        }
+    </script>
+</body>
+</html>
