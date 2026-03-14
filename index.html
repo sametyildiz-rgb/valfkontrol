@@ -1,33 +1,64 @@
 <!DOCTYPE html>
-<html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+    <title>SY G22 Valf Kontrol</title>
+    <style>
+        body { font-family: sans-serif; background: #1a1a1a; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        .btn { width: 80%; height: 80px; margin: 15px; border: none; border-radius: 15px; font-size: 20px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .btn-open { background: #e63946; color: white; box-shadow: 0 4px 15px rgba(230, 57, 70, 0.4); }
+        .btn-close { background: #457b9d; color: white; box-shadow: 0 4px 15px rgba(69, 123, 157, 0.4); }
+        .status { margin-top: 20px; font-size: 14px; color: #888; }
+        .btn:active { transform: scale(0.95); opacity: 0.8; }
+    </style>
+</head>
 <body>
-    <button onclick="baglanVeGonder(1)" style="height:100px; width:100%; background:green; color:white;">VALF AÇ</button>
-    <hr>
-    <button onclick="baglanVeGonder(0)" style="height:100px; width:100%; background:red; color:white;">VALF KAPAT</button>
+
+    <button class="btn btn-open" onclick="valfGonder(1)">VALF AÇ (LOUD)</button>
+    <button class="btn btn-close" onclick="valfGonder(0)">VALF KAPAT (QUIET)</button>
+    
+    <div id="status" class="status">Durum: Bağlantı bekleniyor...</div>
 
     <script>
-        async function baglanVeGonder(deger) {
-            const serviceUuid = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
-            const charUuid = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
+        let bleChar = null;
+        let bleDevice = null;
+        const serviceUuid = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
+        const charUuid = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
+
+        async function baglan() {
+            if (bleChar && bleDevice && bleDevice.gatt.connected) {
+                return bleChar;
+            }
 
             try {
-                // 1. Cihazı tara ve seç
-                const device = await navigator.bluetooth.requestDevice({
+                document.getElementById('status').innerText = "Cihaz aranıyor...";
+                bleDevice = await navigator.bluetooth.requestDevice({
                     filters: [{ services: [serviceUuid] }]
                 });
 
-                // 2. Bağlan
-                const server = await device.gatt.connect();
+                const server = await bleDevice.gatt.connect();
                 const service = await server.getPrimaryService(serviceUuid);
-                const characteristic = await service.getCharacteristic(charUuid);
+                bleChar = await service.getCharacteristic(charUuid);
 
-                // 3. Veriyi gönder (Uint8Array olarak)
-                const data = new Uint8Array([deger]);
-                await characteristic.writeValue(data);
-                
-                alert("Komut gönderildi: " + deger);
+                document.getElementById('status').innerText = "Durum: Bağlı ✅";
+                return bleChar;
             } catch (error) {
-                console.log("Hata: " + error);
+                document.getElementById('status').innerText = "Hata: " + error;
+                return null;
+            }
+        }
+
+        async function valfGonder(deger) {
+            const char = await baglan();
+            if (char) {
+                try {
+                    await char.writeValueWithoutResponse(new Uint8Array([deger]));
+                    console.log("Gönderildi: " + deger);
+                } catch (error) {
+                    document.getElementById('status').innerText = "Bağlantı koptu!";
+                    bleChar = null; // Hata olursa sıfırla ki tekrar bağlansın
+                }
             }
         }
     </script>
