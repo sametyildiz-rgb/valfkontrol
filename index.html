@@ -49,6 +49,20 @@
             }
         }
 
+                // Mevcut script kısmının sonuna ekle
+        window.onload = async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const action = urlParams.get('action');
+        
+            if (action === 'open') {
+                await valfGonder(1);
+                setTimeout(() => { window.close(); }, 2000); // 2 saniye sonra kapatmayı dene
+            } else if (action === 'close') {
+                await valfGonder(0);
+                setTimeout(() => { window.close(); }, 2000);
+            }
+        };
+                
         async function valfGonder(deger) {
             const char = await baglan();
             if (char) {
